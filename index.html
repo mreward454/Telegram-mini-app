@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My First Telegram Mini App</title>
+    <!-- Tailwind CSS for clean layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Official Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body class="bg-[#18222d] text-white font-sans h-screen flex flex-col justify-between p-5 select-none">
+
+    <!-- TOP HEADER -->
+    <header class="text-center py-4 border-b border-slate-800">
+        <h1 class="text-lg font-extrabold text-[#24a1de] tracking-wide">Telegram Mini App</h1>
+        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">V1.0 Sandbox Developer</p>
+    </header>
+
+    <!-- USER PROFILE SECTION -->
+    <div class="flex-1 flex flex-col items-center justify-center space-y-6">
+        
+        <!-- User Avatar Placeholder -->
+        <div class="w-24 h-24 rounded-full bg-[#24a1de]/10 border-2 border-[#24a1de] flex items-center justify-center text-4xl shadow-xl shadow-[#24a1de]/10">
+            <i class="fa-solid fa-user-astronaut text-[#24a1de] animate-bounce"></i>
+        </div>
+
+        <!-- User Information Cards -->
+        <div class="w-full max-w-sm bg-[#131b26] p-5 rounded-2xl border border-slate-800 space-y-3.5 shadow-lg text-sm">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2">User Profile (Verified)</h3>
+            
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Name:</span>
+                <span id="user-name" class="font-bold text-slate-200">Loading...</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Username:</span>
+                <span id="user-username" class="font-mono text-[#24a1de]">@loading</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Language:</span>
+                <span id="user-lang" class="font-bold text-slate-300 uppercase">EN</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="space-y-3 max-w-sm mx-auto w-full pb-4">
+        <button onclick="sendDataToBot()" class="w-full bg-[#24a1de] hover:bg-[#208bbf] py-3.5 rounded-xl font-bold text-xs tracking-wider transition active:scale-95">
+            <i class="fa-solid fa-paper-plane mr-2"></i> Send Data to Bot
+        </button>
+        <button onclick="closeMiniApp()" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold text-xs tracking-wider transition active:scale-95 text-slate-300">
+            Close App
+        </button>
+    </div>
+
+    <script>
+        // Initialize Telegram WebApp SDK [1]
+        const tg = window.Telegram.WebApp;
+
+        // Tell Telegram the webapp is fully loaded [1]
+        tg.ready();
+        
+        // Expand the Mini App window to full height of Telegram [1]
+        tg.expand();
+
+        // Retrieve user dynamic data directly from Telegram [1]
+        const user = tg.initDataUnsafe?.user;
+
+        if (user) {
+            document.getElementById('user-name').innerText = `${user.first_name} ${user.last_name || ''}`;
+            document.getElementById('user-username').innerText = user.username ? `@${user.username}` : 'No Username Set';
+            document.getElementById('user-lang').innerText = user.language_code || 'en';
+        } else {
+            // Fallback text if opened outside Telegram (e.g. in normal browser) [1]
+            document.getElementById('user-name').innerText = "Guest User";
+            document.getElementById('user-username').innerText = "@guest_profile";
+        }
+
+        // Send payload data back to Telegram Bot [1]
+        function sendDataToBot() {
+            const payload = {
+                action: "button_click",
+                user_logged: user ? user.username : "anonymous",
+                timestamp: Date.now()
+            };
+            
+            // This function sends data string back to the bot (Works only inside Telegram) [1]
+            tg.sendData(JSON.stringify(payload));
+        }
+
+        // Close webview screen [1]
+        function closeMiniApp() {
+            tg.close();
+        }
+    </script>
+</body>
+  </html>
