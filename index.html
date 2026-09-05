@@ -3,38 +3,646 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My First Telegram Mini App</title>
-    <!-- Tailwind CSS for clean layout -->
+    <title>ATF Token - Premium Cloud Miner</title>
+    <!-- Tailwind CSS for Dark Gold Theme -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Official Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Firebase Legacy SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body {
+            background-color: #060913;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Continuous 3D rotation for gold coin */
+        @keyframes rotate-coin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        .spinning-coin {
+            animation: rotate-coin 8s infinite linear;
+            transform-style: preserve-3d;
+        }
+        /* Custom scrollbar for dark layout */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0c1222; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    </style>
 </head>
-<body class="bg-[#18222d] text-white font-sans h-screen flex flex-col justify-between p-5 select-none">
+<body class="h-screen flex flex-col justify-between overflow-hidden">
 
-    <!-- TOP HEADER -->
-    <header class="text-center py-4 border-b border-slate-800">
-        <h1 class="text-lg font-extrabold text-[#24a1de] tracking-wide">Telegram Mini App</h1>
-        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">V1.0 Sandbox Developer</p>
-    </header>
-
-    <!-- USER PROFILE SECTION -->
-    <div class="flex-1 flex flex-col items-center justify-center space-y-6">
-        
-        <!-- User Avatar Placeholder -->
-        <div class="w-24 h-24 rounded-full bg-[#24a1de]/10 border-2 border-[#24a1de] flex items-center justify-center text-4xl shadow-xl shadow-[#24a1de]/10">
-            <i class="fa-solid fa-user-astronaut text-[#24a1de] animate-bounce"></i>
+    <!-- TOP NAVIGATION & ROLE SWITCHER -->
+    <header class="bg-[#0b0f1d] border-b border-slate-900 px-4 py-3 flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-bolt-lightning text-amber-500 text-lg"></i>
+            <span class="text-xs font-bold tracking-widest text-slate-400">ATF<span class="text-amber-500">MINER</span></span>
         </div>
 
-        <!-- User Information Cards -->
-        <div class="w-full max-w-sm bg-[#131b26] p-5 rounded-2xl border border-slate-800 space-y-3.5 shadow-lg text-sm">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2">User Profile (Verified)</h3>
-            
-            <div class="flex justify-between items-center">
-                <span class="text-slate-400">Name:</span>
-                <span id="user-name" class="font-bold text-slate-200">Loading...</span>
+        <div class="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800 text-[10px] font-bold">
+            <button onclick="switchRole('user')" id="role-user-btn" class="px-3 py-1 rounded bg-amber-500 text-slate-950 transition">User Panel</button>
+            <button onclick="switchRole('admin')" id="role-admin-btn" class="px-3 py-1 rounded text-slate-400 transition">Admin Panel</button>
+        </div>
+    </header>
+
+    <!-- CONTENT BOX -->
+    <main class="flex-1 overflow-y-auto pb-20 relative">
+
+        <!-- ==================== USER VIEW ==================== -->
+        <div id="view-user" class="h-full flex flex-col justify-between p-4">
+
+            <!-- Sub Tab Content Loader -->
+            <div class="flex-1 overflow-y-auto" id="user-tab-content">
+                
+                <!-- SUB-TAB 1: MOCK COIN CLOUD MINER -->
+                <div id="sub-mine" class="space-y-4 h-full flex flex-col justify-between">
+                    
+                    <!-- Stats bar -->
+                    <div class="flex justify-between items-center bg-[#0d1322] border border-slate-800/80 p-3 rounded-xl text-center">
+                        <div>
+                            <span class="text-[9px] text-slate-500 block uppercase font-bold">Total Assets</span>
+                            <span id="display-total-assets" class="text-sm font-extrabold text-amber-400 font-mono">0.0000 ATF</span>
+                        </div>
+                        <div class="border-l border-slate-800/80 h-8"></div>
+                        <div>
+                            <span class="text-[9px] text-slate-500 block uppercase font-bold">Miner Speed</span>
+                            <span id="display-miner-speed" class="text-xs font-bold text-slate-200">0.2 Th/s</span>
+                        </div>
+                        <div class="border-l border-slate-800/80 h-8"></div>
+                        <div>
+                            <span class="text-[9px] text-slate-500 block uppercase font-bold">Account Level</span>
+                            <span id="display-user-level" class="text-xs font-bold text-amber-500 uppercase">Level 1</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Assets Display -->
+                    <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                        <div class="bg-[#0f1424]/40 border border-slate-800/60 p-2.5 rounded-xl">
+                            <span class="text-[8px] text-slate-500 uppercase block font-bold">Holding Wallet (Real)</span>
+                            <span id="display-holding" class="text-xs font-mono font-extrabold text-white mt-1 block">0.0000 ATF</span>
+                        </div>
+                        <div class="bg-[#0f1424]/40 border border-slate-800/60 p-2.5 rounded-xl">
+                            <span class="text-[8px] text-slate-500 uppercase block font-bold">Pool Wallet (Mined)</span>
+                            <span id="display-pool" class="text-xs font-mono font-extrabold text-amber-400 mt-1 block">0.0000 ATF</span>
+                        </div>
+                    </div>
+
+                    <!-- Glowing Spinning 3D Gold Coin Vector (ATF) -->
+                    <div class="flex-1 flex items-center justify-center py-2">
+                        <div class="w-44 h-44 rounded-full bg-slate-950 border border-amber-500/20 flex items-center justify-center relative shadow-2xl shadow-amber-500/5">
+                            <!-- Floating miner text effect -->
+                            <div class="absolute top-4 text-[9px] text-emerald-400 font-mono font-bold tracking-wider animate-pulse flex items-center">
+                                <i class="fa-solid fa-arrow-trend-up mr-1 text-[8px]"></i> +<span id="live-speed-ticker">0.0001</span>/s
+                            </div>
+                            
+                            <!-- Gold coin body -->
+                            <div class="w-36 h-36 rounded-full bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-500 flex items-center justify-center shadow-xl border-4 border-amber-300 spinning-coin">
+                                <span class="text-slate-950 font-black text-4xl font-serif tracking-tighter drop-shadow-md">ATF</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Trigger -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-[10px] px-2">
+                            <span class="text-slate-500">Min Claim: No Limit</span>
+                            <span class="text-slate-400 italic">Watch Ad to Claim Pool Balance</span>
+                        </div>
+                        <button onclick="triggerClaim()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black py-4 rounded-xl text-xs tracking-wider uppercase transition shadow-lg shadow-amber-500/10 active:scale-98">
+                            Claim Mined Coins
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- SUB-TAB 2: SPIN WHEEL (10 SPINS PER HOUR COOLDOWN) -->
+                <div id="sub-spin" class="hidden space-y-4 max-w-sm mx-auto text-center h-full flex flex-col justify-center">
+                    <div>
+                        <span class="text-[9px] text-amber-500 uppercase font-bold tracking-widest block">Daily Fortune Wheel</span>
+                        <h3 class="text-base font-bold text-slate-200 mt-1">Spin & Win Free ATF Tokens</h3>
+                    </div>
+
+                    <!-- Spin Board Canvas representation -->
+                    <div class="relative w-44 h-44 mx-auto flex items-center justify-center">
+                        <div id="wheel-graphic" class="w-36 h-36 rounded-full border-4 border-amber-500 bg-[#0f1424] flex items-center justify-center relative transition-transform duration-[3000ms] ease-out">
+                            <!-- Visual Segments pointer lines inside CSS -->
+                            <div class="absolute inset-0 flex items-center justify-center font-bold text-[9px] text-amber-500/30">
+                                <span class="rotate-45">100</span><span class="rotate-[135deg]">75</span><span class="rotate-[225deg]">25</span><span class="rotate-[315deg]">200</span>
+                            </div>
+                            <span id="wheel-center-text" class="text-xl font-black text-white drop-shadow-md">ATF</span>
+                        </div>
+                        <!-- Top Indicator Needle -->
+                        <div class="absolute -top-1 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[16px] border-t-rose-500 z-10"></div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="text-xs text-slate-400">Spins Remaining Today: <strong id="spin-counter-display" class="text-amber-500">10/10</strong></div>
+                        <button onclick="executeWheelSpin()" id="btn-spin-action" class="w-full bg-[#131a2e] border border-amber-500/40 hover:border-amber-400 text-amber-400 font-extrabold py-3.5 rounded-xl text-xs tracking-wider transition active:scale-95">
+                            SPIN THE WHEEL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUB-TAB 3: WALLET CONNECT & WITHDRAWAL -->
+                <div id="sub-wallet" class="hidden space-y-4 max-w-sm mx-auto h-full flex flex-col justify-center">
+                    
+                    <!-- Connection Trigger -->
+                    <div id="ton-connect-box" class="bg-[#0d1322] border border-slate-800 p-5 rounded-2xl text-center space-y-4 shadow-lg">
+                        <div class="w-12 h-12 bg-indigo-950/40 rounded-full flex items-center justify-center text-indigo-400 text-xl mx-auto"><i class="fa-solid fa-wallet"></i></div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-200 block">TON Connect (Demo Wallet)</span>
+                            <span class="text-[10px] text-slate-500 mt-1 block">Connect your wallet addressing to initialize withdrawal operations.</span>
+                        </div>
+                        <button onclick="triggerTONConnect()" id="btn-ton-connect" class="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl text-xs font-bold transition">Connect TON Wallet</button>
+                    </div>
+
+                    <!-- Withdrawal form container (Locked initially) -->
+                    <div id="withdraw-panel" class="hidden bg-[#0d1322] border border-slate-800 p-5 rounded-2xl space-y-4 shadow-lg">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                            <span class="text-xs font-bold text-slate-300 uppercase">Withdraw ATF</span>
+                            <span class="text-[10px] text-slate-500">Connected</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-[9px] text-slate-500 uppercase font-bold mb-1">Enter Withdrawal Amount (ATF)</label>
+                            <input type="number" id="withdraw-amount-input" placeholder="Min 500 ATF" class="w-full bg-[#151c2d] border border-slate-800 rounded-xl p-3 text-sm font-bold text-white focus:outline-none">
+                        </div>
+
+                        <!-- Calculations dynamic logs -->
+                        <div class="bg-slate-950/40 p-3 rounded-xl text-[10px] space-y-1 font-mono text-slate-400">
+                            <p class="flex justify-between"><span>Minimum Limit:</span> <span>500 ATF</span></p>
+                            <p class="flex justify-between"><span>Flat Fee:</span> <span class="text-rose-400">50 ATF</span></p>
+                            <p class="flex justify-between border-t border-slate-900 pt-1 mt-1"><span>Net Payout:</span> <span class="text-emerald-400 font-bold" id="net-payout-log">0.00 ATF</span></p>
+                        </div>
+
+                        <button onclick="submitWithdrawRequest()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl text-xs transition">Confirm Withdrawal Submission</button>
+                    </div>
+
+                </div>
+
             </div>
-            <div class="flex justify-between items-center">
+
+            <!-- USER VIEWS BOTTOM NAV BAR -->
+            <nav class="bg-[#0b0f1d] border-t border-slate-900 py-2.5 flex justify-around items-center shrink-0 z-20">
+                <button onclick="switchUserTab('mine', this)" class="user-nav-btn flex flex-col items-center space-y-0.5 text-amber-500 transition">
+                    <i class="fa-solid fa-pickaxe text-lg"></i>
+                    <span class="text-[9px] font-bold">Mine</span>
+                </button>
+                <button onclick="switchUserTab('spin', this)" class="user-nav-btn flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-300 transition">
+                    <i class="fa-solid fa-dharmachakra text-lg"></i>
+                    <span class="text-[9px] font-bold">Spin Wheel</span>
+                </button>
+                <button onclick="switchUserTab('wallet', this)" class="user-nav-btn flex flex-col items-center space-y-0.5 text-slate-500 hover:text-slate-300 transition">
+                    <i class="fa-solid fa-wallet text-lg"></i>
+                    <span class="text-[9px] font-bold">Wallet</span>
+                </button>
+            </nav>
+
+        </div>
+
+        <!-- ==================== ADMIN VIEW ==================== -->
+        <div id="view-admin" class="hidden p-4 space-y-5">
+            <div class="bg-[#0d1322] border border-slate-800 p-5 rounded-2xl space-y-3">
+                <h3 class="text-sm font-bold text-slate-300 flex items-center">
+                    <i class="fa-solid fa-file-invoice-dollar text-amber-500 mr-2"></i> Pending Withdrawal Approvals Ledger
+                </h3>
+                <p class="text-[10px] text-slate-500">Approve or reject real-time simulation withdrawal requests. Approvals deduct users verified ledger holdings.</p>
+                
+                <div class="space-y-2 max-h-[300px] overflow-y-auto" id="admin-ledger-list">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MOCK ADVERTISING VIDEO POPUP (Required for Claims) -->
+    <div id="ad-popup" class="fixed inset-0 bg-black/95 hidden justify-center items-center z-50 p-4">
+        <div class="bg-[#0d1322] border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 relative">
+            <div class="absolute top-3 right-4 font-mono font-bold text-xs text-rose-500" id="ad-timer">5s</div>
+            <span class="text-[9px] bg-slate-800 text-slate-400 font-bold px-3 py-1 rounded-full uppercase">Sponsor Advertisement</span>
+            <div class="py-6 flex flex-col items-center justify-center">
+                <i class="fa-solid fa-clapperboard text-5xl text-amber-500 animate-pulse"></i>
+                <p class="text-xs font-bold text-slate-200 mt-4">Simulating Sponsor Video Ad...</p>
+                <p class="text-[10px] text-slate-500 mt-1">Please wait for the timer to complete.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOCK TON CONNECT PIN POPUP -->
+    <div id="ton-popup" class="fixed inset-0 bg-black/80 hidden justify-center items-center z-50 p-4">
+        <div class="bg-[#0d1322] border border-slate-800 rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+            <div class="w-12 h-12 bg-indigo-950/40 rounded-full flex items-center justify-center text-indigo-400 text-xl mx-auto"><i class="fa-solid fa-shield-halved"></i></div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-200">Connect Sandbox Wallet</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Accept the mock connection securely to execute in-app withdrawals.</p>
+            </div>
+            <div class="space-y-2">
+                <input type="text" id="mock-ton-address" value="UQC5_NhOW_9kM3dD_demoAddress102938" class="w-full bg-[#151c2d] border border-slate-800 rounded-xl p-3 text-xs font-mono text-center text-slate-300 focus:outline-none">
+                <button onclick="approveTONConnection()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition">Confirm Sandbox Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTS TOAST -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 text-white text-xs font-semibold py-2.5 px-6 rounded-full shadow-2xl z-50 hidden transition-all"></div>
+
+    <!-- JAVASCRIPT SYSTEM ENGINE -->
+    <script>
+        // Real-time Firebase configurations [1]
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNawbMnQVdKqjVaWoZ36u9VlDvf6fWFT0",
+            authDomain: "otp-de60a.firebaseapp.com",
+            databaseURL: "https://otp-de60a-default-rtdb.firebaseio.com",
+            projectId: "otp-de60a",
+            storageBucket: "otp-de60a.firebasestorage.app",
+            messagingSenderId: "222664833559",
+            appId: "1:222664833559:web:9b9e878affe8b063f8fa52",
+            measurementId: "G-LV16VDF21E"
+        };
+
+        // Initialize Firebase app sandbox modules
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Standard User session states
+        const MOCK_UID = "user_sandbox_dev_01"; // Standard testing user account [1]
+        let userState = {
+            holdingWallet: 0.00,
+            poolWallet: 0.00,
+            lastClaimTime: Date.now(),
+            level: 1,
+            speed: 0.2, // Th/s [1]
+            spinsLeft: 10,
+            lastSpinReset: Date.now(),
+            walletAddress: null
+        };
+
+        // Static wheel segments
+        const WHEEL_SEGMENTS = [100, 75, 25, 50, 200];
+
+        window.onload = () => {
+            loadUserData();
+            loadAdminLedger();
+            
+            // Start local counting interval updates for poolWallet [1]
+            setInterval(updateLocalMinedTicker, 100);
+            
+            // Track withdrawal inputs dynamically to calculate real-time payouts
+            document.getElementById('withdraw-amount-input').addEventListener('input', calculateNetPayout);
+        };
+
+        // Retrieve and sync user profile with Firebase Database [1]
+        function loadUserData() {
+            db.ref(`miner_users/${MOCK_UID}`).on('value', snap => {
+                const data = snap.val();
+                if(data) {
+                    userState = data;
+                } else {
+                    // Create default profile for first time initialization [1]
+                    db.ref(`miner_users/${MOCK_UID}`).set(userState);
+                }
+                updateDashboardUI();
+            });
+        }
+
+        // Calculate and update local counting ticker (Simulating active miners) [1]
+        function updateLocalMinedTicker() {
+            if(!userState.lastClaimTime) return;
+
+            const now = Date.now();
+            const elapsedSeconds = (now - userState.lastClaimTime) / 1000;
+            
+            // Calculate accumulation depending on speed (Speed = tokens generated per second) [1]
+            const accumulated = elapsedSeconds * userState.speed;
+            const livePool = parseFloat((userState.poolWallet + accumulated).toFixed(4));
+
+            document.getElementById('display-pool').innerText = `${livePool.toFixed(4)} ATF`;
+            
+            // Set top total assets log (Holding + Active pool accumulation) [1]
+            const total = userState.holdingWallet + livePool;
+            document.getElementById('display-total-assets').innerText = `${total.toFixed(4)} ATF`;
+            document.getElementById('live-speed-ticker').innerText = userState.speed.toFixed(4);
+        }
+
+        // Upgrading logic based on holdings [1]
+        function calculateLevelAndSpeed(holdings) {
+            let level = 1;
+            let speed = 0.2; // Base speed [1]
+
+            if(holdings >= 2500) {
+                level = 4;
+                speed = 2.5;
+            } else if (holdings >= 1000) {
+                level = 3;
+                speed = 1.2;
+            } else if (holdings >= 500) {
+                level = 2;
+                speed = 0.5;
+            }
+            return { level, speed };
+        }
+
+        function updateDashboardUI() {
+            // Live dynamic updates
+            document.getElementById('display-holding').innerText = `${userState.holdingWallet.toFixed(4)} ATF`;
+            document.getElementById('display-user-level').innerText = `Level ${userState.level}`;
+            document.getElementById('display-miner-speed').innerText = `${userState.speed} Th/s`;
+            document.getElementById('spin-counter-display').innerText = `${userState.spinsLeft}/10`;
+
+            // Adjust connected wallet visual panel
+            const tonBox = document.getElementById('ton-connect-box');
+            const withdrawPanel = document.getElementById('withdraw-panel');
+            if (userState.walletAddress) {
+                tonBox.classList.add('hidden');
+                withdrawPanel.classList.remove('hidden');
+                document.getElementById('btn-ton-connect').innerText = "Wallet Connected";
+            } else {
+                tonBox.classList.remove('hidden');
+                withdrawPanel.classList.add('hidden');
+            }
+        }
+
+        // ==================== USER ACTIONS MODULES ====================
+
+        // Claiming mined tokens requires a mock ad presentation [1]
+        function triggerClaim() {
+            const adPopup = document.getElementById('ad-popup');
+            const adTimer = document.getElementById('ad-timer');
+            
+            adPopup.classList.remove('hidden');
+            adPopup.classList.add('flex');
+
+            let secondsLeft = 5;
+            adTimer.innerText = `${secondsLeft}s`;
+
+            let timerId = setInterval(() => {
+                secondsLeft--;
+                adTimer.innerText = `${secondsLeft}s`;
+
+                if(secondsLeft <= 0) {
+                    clearInterval(timerId);
+                    adPopup.classList.add('hidden');
+                    adPopup.classList.remove('flex');
+                    
+                    // Proceed to commit claim on database [1]
+                    executeClaimCommit();
+                }
+            }, 1000);
+        }
+
+        function executeClaimCommit() {
+            const now = Date.now();
+            const elapsedSeconds = (now - userState.lastClaimTime) / 1000;
+            const accumulated = elapsedSeconds * userState.speed;
+            
+            const totalMined = userState.poolWallet + accumulated;
+            const newHoldings = userState.holdingWallet + totalMined;
+
+            // Re-calculate Level and Speed based on new holding balances! [1]
+            const calc = calculateLevelAndSpeed(newHoldings);
+
+            db.ref(`miner_users/${MOCK_UID}`).update({
+                holdingWallet: newHoldings,
+                poolWallet: 0.00, // Reset mined pool balance [1]
+                lastClaimTime: now,
+                level: calc.level,
+                speed: calc.speed
+            }).then(() => {
+                showToast(`Claim Success! Mined ${totalMined.toFixed(4)} ATF transfered to your verified wallet.`);
+            });
+        }
+
+        // Fortune Spin Wheel Module [1]
+        function executeWheelSpin() {
+            if (userState.spinsLeft <= 0) {
+                showToast("You have run out of spins for this hour! Cooldown resets dynamically.");
+                return;
+            }
+
+            const btn = document.getElementById('btn-spin-action');
+            btn.disabled = true;
+
+            const wheel = document.getElementById('wheel-graphic');
+            
+            // Randomly select sector segment
+            const randomIndex = Math.floor(Math.random() * WHEEL_SEGMENTS.length);
+            const selectedReward = WHEEL_SEGMENTS[randomIndex];
+
+            // Wheel segments rotation calculation: index 0 (100) -> 0 deg, index 1 (75) -> 72 deg, etc.
+            const degreeStep = 360 / WHEEL_SEGMENTS.length;
+            const targetDegree = 3600 + (randomIndex * degreeStep); // Spin at least 10 rounds
+
+            wheel.style.transform = `rotate(${targetDegree}deg)`;
+
+            setTimeout(() => {
+                // Add prize balance to verified holding wallet [1]
+                const newHoldings = userState.holdingWallet + selectedReward;
+                const calc = calculateLevelAndSpeed(newHoldings);
+
+                db.ref(`miner_users/${MOCK_UID}`).update({
+                    holdingWallet: newHoldings,
+                    spinsLeft: userState.spinsLeft - 1,
+                    level: calc.level,
+                    speed: calc.speed
+                }).then(() => {
+                    showToast(`Congratulations! You won +${selectedReward} ATF Tokens! 🎉`);
+                    btn.disabled = false;
+                    
+                    // Reset wheel rotation CSS
+                    wheel.style.transition = 'none';
+                    wheel.style.transform = 'rotate(0deg)';
+                    setTimeout(() => {
+                        wheel.style.transition = 'transform 3000ms ease-out';
+                    }, 50);
+                });
+            }, 3100);
+        }
+
+        // Connect TON Wallet
+        function triggerTONConnect() {
+            const popup = document.getElementById('ton-popup');
+            popup.classList.remove('hidden');
+            popup.classList.add('flex');
+        }
+
+        function approveTONConnection() {
+            const addr = document.getElementById('mock-ton-address').value.trim();
+            if(!addr) return showToast("Invalid address parameters.");
+
+            db.ref(`miner_users/${MOCK_UID}/walletAddress`).set(addr)
+                .then(() => {
+                    document.getElementById('ton-popup').classList.add('hidden');
+                    document.getElementById('ton-popup').classList.remove('flex');
+                    showToast("Sandbox Wallet connected successfully!");
+                });
+        }
+
+        // Submitting manual withdrawal request (min 500, flat fee 50) [1]
+        function submitWithdrawRequest() {
+            const amt = parseFloat(document.getElementById('withdraw-amount-input').value);
+            if (isNaN(amt) || amt < 500) {
+                showToast("Minimum withdrawal requirement is 500 ATF.");
+                return;
+            }
+
+            if (amt > userState.holdingWallet) {
+                showToast("Insufficient verified holding wallet balance.");
+                return;
+            }
+
+            // Lock user's tokens locally during approval state to prevent double spends [1]
+            const netAmount = amt - 50;
+            const temporaryHoldings = userState.holdingWallet - amt;
+            const calc = calculateLevelAndSpeed(temporaryHoldings);
+
+            const requestData = {
+                uid: MOCK_UID,
+                email: "sandbox_user@test.com",
+                amount: amt,
+                netAmount: netAmount,
+                address: userState.walletAddress,
+                status: 'pending'
+            };
+
+            // Deduct immediately, if rejected admin returns full amount [1]
+            db.ref(`miner_users/${MOCK_UID}`).update({
+                holdingWallet: temporaryHoldings,
+                level: calc.level,
+                speed: calc.speed
+            }).then(() => {
+                db.ref('miner_withdrawals').push(requestData)
+                    .then(() => {
+                        showToast(`Withdrawal requested successfully! Verification pending at admin console.`);
+                        document.getElementById('withdraw-amount-input').value = '';
+                        calculateNetPayout();
+                    });
+            });
+        }
+
+        function calculateNetPayout() {
+            const amt = parseFloat(document.getElementById('withdraw-amount-input').value) || 0;
+            const payoutLog = document.getElementById('net-payout-log');
+            if(amt >= 500) {
+                payoutLog.innerText = `${(amt - 50).toFixed(2)} ATF`;
+            } else {
+                payoutLog.innerText = `0.00 ATF`;
+            }
+        }
+
+        // ==================== ADMINISTRATION LEDGER MODULES ====================
+
+        function loadAdminLedger() {
+            db.ref('miner_withdrawals').on('value', snap => {
+                const list = document.getElementById('admin-ledger-list');
+                list.innerHTML = '';
+                const requests = snap.val();
+
+                if(!requests) {
+                    list.innerHTML = `<p class="text-xs text-slate-500 italic">No incoming transaction alerts in ledger.</p>`;
+                    return;
+                }
+
+                let pendingCount = 0;
+
+                Object.keys(requests).forEach(id => {
+                    const r = requests[id];
+                    if (r.status === 'pending') {
+                        pendingCount++;
+                        const card = document.createElement('div');
+                        card.className = "bg-[#111625] p-3.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs";
+                        card.innerHTML = `
+                            <div>
+                                <span class="block font-bold text-slate-200">User UID: ${r.uid}</span>
+                                <span class="text-slate-500 text-[10px] font-mono">Addr: ${r.address.slice(0, 12)}...</span>
+                                <span class="block text-amber-500 font-extrabold mt-1">Requested: ${r.amount} ATF (Net: ${r.netAmount})</span>
+                            </div>
+                            <div class="flex space-x-1.5">
+                                <button onclick="handleWithdrawStatus('${id}', 'approved', '${r.uid}', ${r.amount})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Approve</button>
+                                <button onclick="handleWithdrawStatus('${id}', 'rejected', '${r.uid}', ${r.amount})" class="bg-rose-600 hover:bg-rose-500 text-white font-bold py-1.5 px-3 rounded-lg text-[10px]">Reject</button>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    }
+                });
+
+                if(pendingCount === 0) {
+                    list.innerHTML = `<p class="text-xs text-slate-500 italic">No pending transaction alerts in ledger.</p>`;
+                }
+            });
+        }
+
+        function handleWithdrawStatus(id, status, uid, amount) {
+            db.ref(`miner_withdrawals/${id}/status`).set(status)
+                .then(() => {
+                    if (status === 'approved') {
+                        showToast("Transaction approved successfully!");
+                    } else {
+                        // Refund locked assets to verified holding wallet on admin rejection [1]
+                        db.ref(`miner_users/${uid}`).once('value', snap => {
+                            const u = snap.val();
+                            const refundedHoldings = u.holdingWallet + amount;
+                            const calc = calculateLevelAndSpeed(refundedHoldings);
+
+                            db.ref(`miner_users/${uid}`).update({
+                                holdingWallet: refundedHoldings,
+                                level: calc.level,
+                                speed: calc.speed
+                            }).then(() => {
+                                showToast("Transaction rejected! Token balance returned to user.");
+                            });
+                        });
+                    }
+                });
+        }
+
+        // Navigation Layout Roles Controls
+        function switchRole(role) {
+            const userBox = document.getElementById('view-user');
+            const adminBox = document.getElementById('view-admin');
+            const userBtn = document.getElementById('role-user-btn');
+            const adminBtn = document.getElementById('role-admin-btn');
+
+            if (role === 'user') {
+                userBox.classList.remove('hidden');
+                adminBox.classList.add('hidden');
+                userBtn.className = "px-3 py-1 rounded bg-amber-500 text-slate-950 transition";
+                adminBtn.className = "px-3 py-1 rounded text-slate-400 transition";
+            } else {
+                adminBox.classList.remove('hidden');
+                userBox.classList.add('hidden');
+                adminBtn.className = "px-3 py-1 rounded bg-amber-500 text-slate-950 transition";
+                userBtn.className = "px-3 py-1 rounded text-slate-400 transition";
+            }
+        }
+
+        function switchUserTab(tabId, element) {
+            const tabs = ['mine', 'spin', 'wallet'];
+            tabs.forEach(t => {
+                document.getElementById(`sub-${t}`).classList.add('hidden');
+            });
+            document.getElementById(`sub-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.user-nav-btn').forEach(btn => {
+                btn.classList.remove('text-amber-500');
+                btn.classList.add('text-slate-500');
+            });
+            element.classList.remove('text-slate-500');
+            element.classList.add('text-amber-500');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3500);
+        }
+    </script>
+</body>
+    </html>            <div class="flex justify-between items-center">
                 <span class="text-slate-400">Username:</span>
                 <span id="user-username" class="font-mono text-[#24a1de]">@loading</span>
             </div>
